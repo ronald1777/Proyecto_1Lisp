@@ -1,3 +1,4 @@
+;; la funcion se encarga de tomar un dato y operarlo como factorial
 (defun mostrar-factorial (n)
   (check-type n (integer 0 *))
   (loop with resultado = 1
