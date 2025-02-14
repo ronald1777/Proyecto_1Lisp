@@ -11,4 +11,4 @@
       (progn
         (format t "Secuencia de Fibonacci:~%")
         (dotimes (i numTerminos)
-          (format t "~A " (fibonacci i))))))
+          (format t "~A " (fibonacci i))))))gi
