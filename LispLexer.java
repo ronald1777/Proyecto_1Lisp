@@ -3,7 +3,7 @@ import java.util.ArrayList;
 public class LispLexer{
     public static void main(String[] args) {
         
-        String expression = "(blabla x y)";
+        String expression = "(- 9 (* 3 5))";
         
         boolean esCorrecta = verificarParentesis(expression);
         if (esCorrecta) {
