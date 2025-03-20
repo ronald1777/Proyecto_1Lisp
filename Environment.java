@@ -4,7 +4,7 @@ import java.util.Map;
 
 public class Environment {
     private Map<String, Object> variables;
-    private Environment parent; // Para soportar entornos anidados (scopes)
+    private Environment parent; 
 
     public Environment() {
         this.variables = new HashMap<>();
@@ -16,11 +16,11 @@ public class Environment {
         this.parent = parent;
     }
 
-    // Clase interna para representar funciones definidas por el usuario
+    
     public static class UserDefinedFunction {
-        private List<String> params; // Lista de nombres de parámetros
-        private Node body; // Cuerpo de la función (una expresión Lisp)
-        private Environment definitionEnv; // Entorno en el que se definió la función
+        private List<String> params; 
+        private Node body; 
+        private Environment definitionEnv; 
 
         public UserDefinedFunction(List<String> params, Node body, Environment definitionEnv) {
             this.params = params;
