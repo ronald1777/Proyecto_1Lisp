@@ -22,11 +22,12 @@ public class Node {
         return value;
     }
 
+    @SuppressWarnings("unchecked")
     public List<Node> getList() {
         if (!isList) {
             throw new IllegalStateException("Este nodo no es una lista");
         }
-        return (List<Node>) value;
+        return (List<Node>) value; // Se suprime la advertencia porque el constructor ya garantiza el tipo
     }
 
     @Override
