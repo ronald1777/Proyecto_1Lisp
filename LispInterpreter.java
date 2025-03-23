@@ -55,117 +55,106 @@ public class LispInterpreter {
             throw new IllegalArgumentException("Lista vacía no válida");
         }
 
-        Object operatorObj = evaluate(list.get(0), env);
-        if (operatorObj instanceof Environment.UserDefinedFunction) {
-            Environment.UserDefinedFunction func = (Environment.UserDefinedFunction) operatorObj;
-            List<Node> args = list.subList(1, list.size());
-
-            List<Object> argValues = new ArrayList<>();
-            for (Node arg : args) {
-                argValues.add(evaluate(arg, env));
-            }
-
-            Environment funcEnv = new Environment(func.getDefinitionEnv());
-            List<String> params = func.getParams();
-            if (params.size() != args.size()) {
-                throw new IllegalArgumentException("Número incorrecto de argumentos para la función: se esperaban " + params.size() + ", se recibieron " + args.size());
-            }
-
-            for (int i = 0; i < params.size(); i++) {
-                funcEnv.define(params.get(i), argValues.get(i));
-            }
-
-            return evaluate(func.getBody(), funcEnv);
-        }
-
-        String operator = (String) operatorObj;
+        String operator = list.get(0).getValue().toString().toUpperCase();
         List<Node> args = list.subList(1, list.size());
 
-        switch (operator.toUpperCase()) {
-            case "+":
-                double sum = 0;
-                for (Node arg : args) {
-                    sum += ((Number) evaluate(arg, env)).doubleValue();
-                }
-                return sum;
-
-            case "-":
-                if (args.isEmpty()) {
-                    throw new IllegalArgumentException("- requiere al menos un argumento");
-                }
-                double result = ((Number) evaluate(args.get(0), env)).doubleValue();
-                for (int i = 1; i < args.size(); i++) {
-                    result -= ((Number) evaluate(args.get(i), env)).doubleValue();
-                }
-                return result;
-
-            case "*":
-                double product = 1;
-                for (Node arg : args) {
-                    product *= ((Number) evaluate(arg, env)).doubleValue();
-                }
-                return product;
-
-            case "/":
-                if (args.isEmpty()) {
-                    throw new IllegalArgumentException("/ requiere al menos un argumento");
-                }
-                double divResult = ((Number) evaluate(args.get(0), env)).doubleValue();
-                for (int i = 1; i < args.size(); i++) {
-                    double divisor = ((Number) evaluate(args.get(i), env)).doubleValue();
-                    if (divisor == 0) {
-                        throw new IllegalArgumentException("División por cero");
-                    }
-                    divResult /= divisor;
-                }
-                return divResult;
-
-            case "QUOTE":
-                if (args.size() != 1) {
-                    throw new IllegalArgumentException("QUOTE requiere exactamente un argumento");
-                }
-                return args.get(0);
-
-            case "DEFINE":
-                if (args.size() != 2) {
-                    throw new IllegalArgumentException("DEFINE requiere exactamente dos argumentos");
-                }
-                String symbol = (String) args.get(0).getValue();
-                Object value = evaluate(args.get(1), env);
-                env.define(symbol, value);
-                return null;
-
+        switch (operator) {
             case "DEFUN":
-                if (args.size() != 3) {
-                    throw new IllegalArgumentException("DEFUN requiere exactamente tres argumentos: nombre, lista de parámetros y cuerpo");
-                }
-                String funcName = (String) args.get(0).getValue();
-                Node paramListNode = args.get(1);
-                if (!paramListNode.isList()) {
-                    throw new IllegalArgumentException("El segundo argumento de DEFUN debe ser una lista de parámetros");
-                }
-                List<Node> paramNodes = paramListNode.getList();
+                String funcName = args.get(0).getValue().toString();
+                List<Node> paramNodes = args.get(1).getList();
                 List<String> params = new ArrayList<>();
                 for (Node paramNode : paramNodes) {
-                    if (!paramNode.isList() && paramNode.getValue() instanceof String) {
-                        params.add((String) paramNode.getValue());
-                    } else {
-                        throw new IllegalArgumentException("Los parámetros de DEFUN deben ser símbolos");
-                    }
+                    params.add(paramNode.getValue().toString());
                 }
                 Node body = args.get(2);
                 env.define(funcName, new Environment.UserDefinedFunction(params, body, env));
                 return null;
 
+            case "COND":
+                for (Node clause : args) {
+                    List<Node> clauseList = clause.getList();
+                    boolean test = (Boolean) evaluate(clauseList.get(0), env);
+                    if (test) {
+                        return evaluate(clauseList.get(1), env);
+                    }
+                }
+                return null;
+
+            case "IF":
+                boolean test = (Boolean) evaluate(args.get(0), env);
+                return evaluate(test ? args.get(1) : args.get(2), env);
+
+            case "PROGN":
+                Object result = null;
+                for (Node expr : args) {
+                    result = evaluate(expr, env);
+                }
+                return result;
+
+            case "LET":
+                Environment localEnv = new Environment(env);
+                for (Node bind : args.get(0).getList()) {
+                    String var = bind.getList().get(0).getValue().toString();
+                    Object val = evaluate(bind.getList().get(1), env);
+                    localEnv.define(var, val);
+                }
+                Object letResult = null;
+                for (int i = 1; i < args.size(); i++) {
+                    letResult = evaluate(args.get(i), localEnv);
+                }
+                return letResult;
+
+            case "=":
+                return evaluate(args.get(0), env).equals(evaluate(args.get(1), env));
+
+            case "<":
+                return ((Double)evaluate(args.get(0), env)) < ((Double)evaluate(args.get(1), env));
+
+            case ">":
+                return ((Double)evaluate(args.get(0), env)) > ((Double)evaluate(args.get(1), env));
+
+            case "+":
+                double sum = 0;
+                for (Node arg : args) {
+                    sum += ((Double)evaluate(arg, env));
+                }
+                return sum;
+
+            case "-":
+                double sub = (Double)evaluate(args.get(0), env);
+                for (int i = 1; i < args.size(); i++) {
+                    sub -= ((Double)evaluate(args.get(i), env));
+                }
+                return sub;
+
+            case "*":
+                double prod = 1;
+                for (Node arg : args) {
+                    prod *= ((Double)evaluate(arg, env));
+                }
+                return prod;
+
+            case "/":
+                double div = (Double)evaluate(args.get(0), env);
+                for (int i = 1; i < args.size(); i++) {
+                    div /= ((Double)evaluate(args.get(i), env));
+                }
+                return div;
+
             default:
-                throw new IllegalArgumentException("Operador no soportado: " + operator);
+                Environment.UserDefinedFunction func = (Environment.UserDefinedFunction)env.lookup(operator.toLowerCase());
+                Environment funcEnv = new Environment(func.getDefinitionEnv());
+                for (int i = 0; i < func.getParams().size(); i++) {
+                    funcEnv.define(func.getParams().get(i), evaluate(args.get(i), env));
+                }
+                return evaluate(func.getBody(), funcEnv);
         }
     }
 
     public Object interpret(String expression) {
         Lexer lexer = new Lexer(expression);
         if (!lexer.verificarParentesis()) {
-            throw new IllegalArgumentException("Expresión LISP inválida: paréntesis desbalanceados");
+            throw new IllegalArgumentException("Expresión inválida: paréntesis desbalanceados");
         }
         Parser parser = new Parser(lexer);
         Node parsed = parser.parse();
@@ -178,19 +167,10 @@ public class LispInterpreter {
         while (true) {
             System.out.print("> ");
             String input = scanner.nextLine().trim();
-            if (input.equalsIgnoreCase("exit")) {
-                break;
-            }
-            if (input.isEmpty()) {
-                continue;
-            }
+            if (input.equalsIgnoreCase("exit")) break;
+            if (input.isEmpty()) continue;
             try {
-                Object result = interpret(input);
-                if (result instanceof Node) {
-                    System.out.println(result);
-                } else if (result != null) {
-                    System.out.println(result);
-                }
+                System.out.println(interpret(input));
             } catch (Exception e) {
                 System.out.println("Error: " + e.getMessage());
             }
@@ -200,7 +180,6 @@ public class LispInterpreter {
     }
 
     public static void main(String[] args) {
-        LispInterpreter interpreter = new LispInterpreter();
-        interpreter.runREPL();
+        new LispInterpreter().runREPL();
     }
 }

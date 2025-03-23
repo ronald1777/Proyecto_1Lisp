@@ -33,11 +33,9 @@ public class Parser {
         if (currentToken.getType() == LispInterpreter.TokenType.LPAREN) {
             eat(LispInterpreter.TokenType.LPAREN);
             List<Node> nodes = new ArrayList<>();
-
             while (currentToken.getType() != LispInterpreter.TokenType.RPAREN && currentToken.getType() != LispInterpreter.TokenType.EOF) {
                 nodes.add(parseExpression());
             }
-
             if (currentToken.getType() != LispInterpreter.TokenType.RPAREN) {
                 throw new IllegalArgumentException("Error: Paréntesis de cierre sin apertura previa");
             }
@@ -50,7 +48,7 @@ public class Parser {
                 double num = Double.parseDouble(value);
                 return new Node(num);
             } catch (NumberFormatException e) {
-                return new Node(value); // Es un símbolo
+                return new Node(value);
             }
         } else {
             throw new IllegalArgumentException("Token inesperado: " + currentToken);
